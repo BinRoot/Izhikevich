@@ -83,7 +83,7 @@ for t=tspan
         I=0;
     end;
     V = V + 10*V_u^2 + 1250*V_u + lamda*140 - lamda*u_u + lamda*I;
-    u = u + mydiv(V,delta) - 5*mydiv(u,delta);
+    u = u + V_u - 5*u_u;
     if V > (30*delta)
         VV(end+1)=30;
         V = c*delta;
@@ -101,6 +101,111 @@ plot(tspan,VV,[0 T1 T1 max(tspan)],-90+[0 0 10 10]);
 axis([0 max(tspan) -90 30])
 axis off;
 title('(C) tonic bursting');
+
+%%%%%%%%%%%%%%% (D) phasic bursting %%%%%%%%%%%%%%%%%%%%%%%%%%
+subplot(5,4,4)   
+a=0.02; b=0.25; c=-55;  d=0.05; delta=1000; lamda=200;
+V=-64*delta;  u=b*V;
+V_u=-64;
+u_u=b*V_u;
+VV=[];  uu=[];
+tau = 1;  tspan = 0:tau:1000;
+T1=100;
+for t=tspan
+    if (t>T1) 
+        I=3;
+    else
+        I=0;
+    end;
+    V = V + 8*V_u^2 + 1000*V_u + lamda*140 - lamda*u_u + I*40;
+    u = u + V_u - 4*u_u;
+    if V > (30*delta)
+       	VV(end+1)=30;
+        V = c*delta;
+        u = u + d*delta;
+    	V_u=mydiv(V,delta);
+    	u_u=mydiv(u,delta);
+    else
+        V_u=mydiv(V,delta);
+    	u_u=mydiv(u,delta);
+    	VV(end+1)=V_u;
+    end;
+    uu(end+1)=u_u;
+end;
+plot(tspan,VV,[0 T1 T1 max(tspan)],-90+[0 0 10 10]);
+axis([0 max(tspan) -90 30])
+axis off;
+title('(D) phasic bursting');
+
+%%%%%%%%%%%%%%% (E) mixed mode %%%%%%%%%%%%%%%%%%%%%%%%%
+subplot(5,4,5) 
+a=0.02; b=0.2;  c=-55;  d=4; delta=1000; lamda=250;
+V=-70*delta;  u=b*V;
+V_u=-70;
+u_u=b*V_u;
+VV=[];  uu=[];
+tau = 1; tspan = 0:tau:640;
+T1=tspan(end)/10;
+for t=tspan
+    if (t>T1) 
+        I=10;
+    else
+        I=0;
+    end;
+    V = V + 10*V_u^2 + 1250*V_u + lamda*140 - lamda*u_u + lamda*I;
+    u = u + V_u - 5*u_u;
+    if V > (30*delta)
+        VV(end+1)=30;
+        V = c*delta;
+        u = u + d*delta;
+    	V_u=mydiv(V,delta);
+    	u_u=mydiv(u,delta);
+    else
+    	V_u=mydiv(V,delta);
+    	u_u=mydiv(u,delta);
+    	VV(end+1)=V_u;
+    end;
+    uu(end+1)=u_u;
+end;
+plot(tspan,VV,[0 T1 T1 max(tspan)],-90+[0 0 10 10]);
+axis([0 max(tspan) -90 30])
+axis off;
+title('(E) mixed mode');
+
+%%%%%%%%%%%%%%%% (F) spike freq. adapt %%%%%%%%%%%%%%%%%%%%%%%%
+subplot(5,4,6)  
+a=0.01; b=0.2;  c=-65;  d=8; delta=2000; lamda=500;
+V=-70*delta;  u=b*V;
+V_u=-70;
+u_u=b*V_u;
+VV=[];  uu=[];
+tau = 1; tspan = 0:tau:340;
+T1=tspan(end)/10;
+for t=tspan
+    if (t>T1) 
+        I=30;
+    else
+        I=0;
+    end;    
+    V = V + 20*V_u^2 + 2500*V_u + lamda*140 - lamda*u_u + lamda*I;
+    u = u + V_u - 5*u_u;
+    if V > (30*delta)
+        VV(end+1)=30;
+        V = c*delta;
+        u = u + d*delta;
+    	V_u=mydiv(V,delta);
+    	u_u=mydiv(u,delta);
+    else
+    	V_u=mydiv(V,delta);
+    	u_u=mydiv(u,delta);
+    	VV(end+1)=V_u;
+    end;
+    uu(end+1)=u_u;
+end;
+plot(tspan,VV,[0 T1 T1 max(tspan)],-90+[0 0 10 10]);
+axis([0 max(tspan) -90 30])
+axis off;
+title('(F) spike freq. adapt');
 
 %%%% Derived Eqs %%%%%
 % Delta*V = Delta*V + 0.04*Lamda*V^2 + 5*Lamda*V + 140*Lamda - Lamda*u + Lamda*I;
