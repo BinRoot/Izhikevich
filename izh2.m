@@ -606,7 +606,8 @@ title('(Q) DAP         ');
 subplot(5,4,18) 
 a=0.02;  b=1; c=-55;  d=4; delta=100; lamda=50;
 V=-65*delta;  u=-16*delta;
-V=-65;  u=-16;
+V_u=-65;  
+u_u=-16;
 VV=[];  uu=[];  II=[];
 tau = 1; tspan = 0:tau:800; %%400%%
 for t=tspan
