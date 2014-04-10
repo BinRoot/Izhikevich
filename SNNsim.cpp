@@ -1,4 +1,4 @@
-// SNNSim, a one layer feed-forward network with axonal conduction delays and STDP, 
+// SNNsim, a one layer feed-forward network with axonal conduction delays and STDP, 
 // to be used as a baseline by which to judge experiments run on a SpiNNaker board
 // Created by Matthew A. Frazier, April 1, 2014
 // Adapted from SPNET, created by Eugene M. Izhikevich, May 17, 2004, San Diego, CA
@@ -15,13 +15,13 @@ using namespace std;
 #define getrandom(max1) ((rand()%(int)((max1)))) // random integer between 0 and max-1
 												
 const	int		Ni = 48;		// input neurons			
-const	int		No = 16;		// output neurons				 
+const	int		No = 16;		// output neurons			 
 const	int		N  = Ni+No;		// total number of neurons	
 const	int		M  = 16;		// the number of synapses per input neuron 
 const	int		D  = 20;		// maximal axonal conduction delay
 		float	sm = 10.0;		// maximal synaptic strength		
-int		post[Ni][M];				// indeces of postsynaptic neurons
-float	s[Ni][M], sd[Ni][M];		// matrix of synaptic weights and their derivatives
+int		post[N][M];				// indeces of postsynaptic neurons
+float	s[N][M], sd[N][M];		// matrix of synaptic weights and their derivatives
 short	delays_length[N][D];	// distribution of delays
 short	delays[N][D][M];		// arrangement of delays   
 int		N_pre[N], I_pre[N][3*M], D_pre[N][3*M];	// presynaptic information
@@ -30,7 +30,7 @@ float	LTP[N][1001+D], LTD[N];	// STDP functions
 float	a[N], d[N];				// neuronal dynamics parameters
 float	v[N], u[N];				// activity variables
 int		N_firings;				// the number of fired neurons 
-const int N_firings_max=100*N;	// upper limit on the number of fired neurons per sec
+const int N_firings_max=200*N;	// upper limit on the number of fired neurons per sec
 int		firings[N_firings_max][2]; // indeces and timings of spikes
 
 void initialize()
@@ -39,36 +39,26 @@ void initialize()
 
 	for (i=0;i<N;i++) d[i]=6.0; // All RS type (8)
 
-	for (i=0;i<Ni;i++) for (j=0;j<M;j++) for (k=Ni;k<N;k++)
+	for (i=0;i<Ni;i++) for (k=Ni;k<N;k++)
 	{	
-		post[i][j]=k; //Ni->No mapping
+		post[i][k-Ni]=k; //Ni->No mapping
 	}
 	for (i=0;i<N;i++)	for (j=0;j<M;j++) s[i][j]=(getrandom(12)-5);  // random initial synaptic weights on [-5.0, 6.0]
   	for (i=0;i<N;i++)	for (j=0;j<M;j++) sd[i][j]=0.0; // synaptic derivatives 
   	for (i=0;i<N;i++)
 	{
 		short ind=0;
-		if (i<Ni)
-		{
-			for (j=0;j<D;j++) 
-			{	delays_length[i][j]=M/D;	// uniform distribution of input synaptic delays
-				for (k=0;k<delays_length[i][j];k++)
-					delays[i][j][k]=ind++;
-			}
-		}
-		else
-		{
-			for (j=0;j<D;j++) delays_length[i][j]=0;
-			delays_length[i][0]=M;			// all output delays are 1 ms
-			for (k=0;k<delays_length[i][0];k++)
-					delays[i][0][k]=ind++;
+		for (j=0;j<D;j++) 
+		{	delays_length[i][j]=1;	// round(M/D) uniform distribution of synaptic delays
+			for (k=0;k<delays_length[i][j];k++)
+				delays[i][j][k]=ind++;
 		}
 	}
 	
   	for (i=0;i<N;i++)
 	{
 		N_pre[i]=0;
-		for (j=0;j<Ni;j++)
+		for (j=0;j<N;j++)
 		for (k=0;k<M;k++)
 		if (post[j][k] == i)		// find all presynaptic neurons 
 		{
@@ -93,6 +83,7 @@ void initialize()
 
 void getInput(char* str)
 {
+	int i, x;
 	int n = (int) getrandom(26);
 	switch (n)
 	{
@@ -203,6 +194,19 @@ void getInput(char* str)
 		default:
 			strcpy(str, "0000000000000000000000000000000000000000000000000");
 	}
+	int err = (int) getrandom(101);
+	
+	if(err<=0) x = 5;
+	else if (err<=3) x = 3;
+	else if (err<=6) x = 1;
+	else x = 0;
+
+	for (i=0; i<x; i++){
+		int index = getrandom(48);
+		if(str[index]=='0') str[index] = '1';
+		else str[index] = '0';
+	}
+	str[49]= (char) x;
 }
 
 int main()
@@ -215,11 +219,11 @@ int main()
 
 	for (sec=0; sec<60*60*24; sec++)		// simulation of 1 day
 	{
-		for (i=0;i<N;i++) I[i] = 0.0;	// reset the input 
-		char inVect[49];
+		for (i=0;i<Ni;i++) I[i] = 0.0;	// reset the input 
+		char inVect[50];
 		getInput(inVect);
-		for (k=0;k<48;k++)
-			if (inVect[k]=='1') I[k]=20.0;	// input vector current assignment for the next second
+		for (k=0;k<Ni;k++)
+			if (inVect[k]=='1') I[k]=14.0;	// input vector current assignment for the next second
 		for (t=0;t<1000;t++)				// simulation of 1 sec
 		{
 			for (i=0;i<N;i++) 
@@ -239,9 +243,10 @@ int main()
 			{
 				for (j=0; j< delays_length[firings[k][1]][t-firings[k][0]]; j++)
 				{
-					i=post[firings[k][1]][delays[firings[k][1]][t-firings[k][0]][j]]; 
-					I[i]+=s[firings[k][1]][delays[firings[k][1]][t-firings[k][0]][j]];
-					if (firings[k][1] < Ni) // this spike is before postsynaptic spikes
+					i=post[firings[k][1]][delays[firings[k][1]][t-firings[k][0]][j]];
+					if (i<N) 	//Sometimes i = 1073741824(number of bytes/GB?), leading to bus error/core dump
+						I[i]+=s[firings[k][1]][delays[firings[k][1]][t-firings[k][0]][j]];
+					if (firings[k][1] < Ni) // this spike is a spike from input neurons
 						sd[firings[k][1]][delays[firings[k][1]][t-firings[k][0]][j]]-=LTD[i];
 				}
 			}
@@ -256,11 +261,10 @@ int main()
 			}
 		}
 		cout << "sec=" << sec << ", firing rate=" << float(N_firings)/N << "\n";
-   		//TODO: print out spike data only from output neurons, rather than from all
-   		fs = fopen("spikes.dat","a");
-   		fprintf(fs, "Input Letter: %c\n", inVect[48]);
+		fs = fopen("spikes.dat","a");
+   		fprintf(fs, "Input Letter: %c, err: %d\n", inVect[48], inVect[49]);
 		for (i=1;i<N_firings;i++)
-			if (firings[i][0] >=0)
+			if ((firings[i][0] >=0) && (firings[i][1] >=48))
 				fprintf(fs, "%d  %d\n", firings[i][0], firings[i][1]);
 		fclose(fs);
 
