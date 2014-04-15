@@ -212,18 +212,20 @@ void getInput(char* str)
 int main()
 {
 	int		i, j, k, sec, t;
+	int 	O_firings;
 	float	I[N];
 	FILE	*fs;
 
 	initialize();	// assign connections, weights, etc. 
 
-	for (sec=0; sec<60*60*24; sec++)		// simulation of 1 day
+	for (sec=0; sec<60*60; sec++)		// simulation of 1 hour //day
 	{
 		for (i=0;i<Ni;i++) I[i] = 0.0;	// reset the input 
 		char inVect[50];
 		getInput(inVect);
 		for (k=0;k<Ni;k++)
 			if (inVect[k]=='1') I[k]=14.0;	// input vector current assignment for the next second
+		O_firings = 0;
 		for (t=0;t<1000;t++)				// simulation of 1 sec
 		{
 			for (i=0;i<N;i++) 
@@ -237,6 +239,7 @@ int main()
 				firings[N_firings  ][0]=t;
 				firings[N_firings++][1]=i;
 				if (N_firings == N_firings_max) {cout << "Too many spikes at t=" << t << " (ignoring all)";N_firings=1;}
+				if (i > 47) {O_firings++;}
 			}
 			k=N_firings;
 			while (t-firings[--k][0] <D)
@@ -261,13 +264,17 @@ int main()
 			}
 		}
 		cout << "sec=" << sec << ", firing rate=" << float(N_firings)/N << "\n";
-		fs = fopen("spikes.dat","a");
-   		fprintf(fs, "Input Letter: %c, err: %d\n", inVect[48], inVect[49]);
-		for (i=1;i<N_firings;i++)
-			if ((firings[i][0] >=0) && (firings[i][1] >=48))
-				fprintf(fs, "%d  %d\n", firings[i][0], firings[i][1]);
-		fclose(fs);
-
+		if(O_firings > 0) {
+			string filename = "spikes" + string(1, inVect[48]) + ".dat";
+			const char *filechar = filename.c_str();
+			fs = fopen(filechar,"w");
+			fprintf(fs, "%%sec: %d, err: %d\n", sec, inVect[49]);
+	   		//fprintf(fs, "%%Sec: %d, Input Letter: %c, err: %d\n", sec, inVect[48], inVect[49]);
+			for (i=1;i<N_firings;i++)
+				if ((firings[i][0] >=0) && (firings[i][1] >=48))
+					fprintf(fs, "%d  %d\n", firings[i][0], firings[i][1]);
+			fclose(fs);
+		}
 		for (i=0;i<N;i++)		// prepare for the next sec
 			for (j=0;j<D+1;j++)
 			LTP[i][j]=LTP[i][1000+j];
